@@ -1,11 +1,53 @@
 ---
-import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
-
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
 ---
 
-<Layout>
-	<Welcome />
+<Layout title="Taiwan & Korea 2026">
+	<main>
+		<section class="hero">
+			<h1>🇹🇼 Taiwan & Korea 🇰🇷</h1>
+			<p class="subtitle">Cestovatelský deník | Odlet za 4 dny</p>
+		</section>
+
+		<section class="content">
+			<div class="card">
+				<h2>Status: Balení kufrů 🎒</h2>
+				<p>Vítejte na mém soukromém webu. Zde budu sdílet fotky a zážitky ze své cesty.</p>
+			</div>
+		</section>
+	</main>
 </Layout>
+
+<style>
+	main {
+		margin: auto;
+		padding: 2rem;
+		width: 800px;
+		max-width: calc(100% - 2rem);
+		color: white;
+		font-family: sans-serif;
+	}
+	.hero {
+		text-align: center;
+		padding: 3rem 0;
+	}
+	h1 {
+		font-size: 4rem;
+		font-weight: 700;
+		line-height: 1;
+		margin-bottom: 0.5em;
+		background: linear-gradient(45deg, #ff0055, #00fbff);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+	}
+	.subtitle {
+		font-size: 1.5rem;
+		color: #ccc;
+	}
+	.card {
+		background: #23262d;
+		padding: 2rem;
+		border-radius: 1rem;
+		border: 1px solid #444;
+	}
+</style>
