@@ -1,11 +1,65 @@
 ---
-import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
-
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
 ---
 
-<Layout>
-	<Welcome />
+<Layout title="Taiwan & Korea 2026">
+	<main>
+		<section class="hero">
+			<h1>🇹🇼 Taiwan & Korea 🇰🇷</h1>
+			<p class="subtitle">Cestovatelský deník | Odlet za 4 dny</p>
+		</section>
+
+		<section class="content">
+			<div class="card">
+				<h2>Status: Přípravy vrcholí ✈️</h2>
+				<p>Infrastruktura webu je konečně funkční na GitHub Pages. Zítra ladíme mapu a galerii!</p>
+			</div>
+		</section>
+	</main>
 </Layout>
+
+<style>
+	main {
+		margin: auto;
+		padding: 2rem;
+		width: 800px;
+		max-width: calc(100% - 2rem);
+		color: #e0e0e0;
+		font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+	}
+	.hero {
+		text-align: center;
+		padding: 4rem 0;
+	}
+	h1 {
+		font-size: 4rem;
+		font-weight: 800;
+		line-height: 1.1;
+		margin-bottom: 0.5em;
+		background: linear-gradient(45deg, #ff0055, #00fbff);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));
+	}
+	.subtitle {
+		font-size: 1.5rem;
+		color: #888;
+		letter-spacing: 2px;
+		text-transform: uppercase;
+	}
+	.card {
+		background: #1a1d23;
+		padding: 2.5rem;
+		border-radius: 1.5rem;
+		border: 1px solid #333;
+		box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+	}
+	h2 {
+		color: #fff;
+		margin-top: 0;
+	}
+	p {
+		line-height: 1.6;
+		font-size: 1.1rem;
+	}
+</style>
