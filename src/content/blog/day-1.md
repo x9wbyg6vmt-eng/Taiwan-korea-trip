@@ -1,8 +1,6 @@
 ---
-title: "První den v pohybu"
-location_name: "Praha -> Taipei"
+title: "První den příprav"
+location_name: "Praha"
 image_main: "/images/uploads/IMG_0979.jpeg"
-image_sub1: "/images/uploads/IMG_0983.jpg"
-image_sub2: "/images/uploads/FOTKA_Z_LETADLA.jpg"
+image_sub1: "/images/uploads/TVUJ_DRUHY_OBRAZEK.jpeg"
 ---
-Zážitky z prvního dne...
