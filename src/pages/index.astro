@@ -1,68 +1,83 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
+import exifr from 'exifr';
+import fs from 'node:fs';
 
 const posts = await getCollection('blog');
+
+// Magie: Extrakce GPS dat z fotek během buildu
+const mapPoints = await Promise.all(posts.map(async (post) => {
+  const imagePath = `./public${post.data.image_main}`;
+  let coords = null;
+  
+  try {
+    if (fs.existsSync(imagePath)) {
+      const data = await exifr.gps(imagePath);
+      if (data) coords = [data.latitude, data.longitude];
+    }
+  } catch (e) {
+    console.log("GPS nenalezeno u:", post.data.image_main);
+  }
+
+  return {
+    title: post.data.title,
+    location: post.data.location_name,
+    coords: coords
+  };
+}));
+
+// Vyfiltrujeme jen příspěvky, co mají GPS
+const validPoints = mapPoints.filter(p => p.coords);
 ---
 
 <Layout title="Taiwan & Korea 2026">
 	<main>
 		<section class="hero">
 			<h1>🇹🇼 Taiwan & Korea 🇰🇷</h1>
-			<p class="subtitle">Cestovatelský deník | Odlet za 3 dny</p>
+			<p class="subtitle">Cestovatelský deník</p>
 		</section>
 
-		<section class="content">
-			<div class="card">
-				<h2>Status: Přípravy vrcholí ✈️</h2>
-				<p>Infrastruktura webu je konečně funkční na GitHub Pages. Zítra ladíme mapu a galerii!</p>
-			</div>
+		<div id="map" style="height: 400px; border-radius: 1rem; margin-bottom: 2rem;"></div>
+
+		<section class="posts-grid">
+			{posts.map(post => (
+				<article class="card">
+					<img src={post.data.image_main} alt={post.data.title} class="main-img" />
+					<h2>{post.data.title}</h2>
+					<p class="loc">📍 {post.data.location_name}</p>
+					<div class="content">
+						{post.body}
+					</div>
+				</article>
+			))}
 		</section>
 	</main>
+
+	<script is:inline define:vars={{ validPoints }}>
+		// Inicializace mapy Leaflet
+		const map = L.map('map').setView([24.0, 121.0], 6); // Centrováno na Taiwan
+		L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+
+		const lineCoords = [];
+
+		validPoints.forEach(point => {
+			L.marker(point.coords).addTo(map)
+				.bindPopup(`<b>${point.title}</b><br>${point.location}`);
+			lineCoords.push(point.coords);
+		});
+
+		// Nakreslí čáru trasy
+		if (lineCoords.length > 1) {
+			L.polyline(lineCoords, {color: '#00fbff', weight: 3}).addTo(map);
+			map.fitBounds(L.polyline(lineCoords).getBounds());
+		}
+	</script>
 </Layout>
 
 <style>
-	main {
-		margin: auto;
-		padding: 2rem;
-		width: 800px;
-		max-width: calc(100% - 2rem);
-		color: #e0e0e0;
-		font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-	}
-	.hero {
-		text-align: center;
-		padding: 4rem 0;
-	}
-	h1 {
-		font-size: 4rem;
-		font-weight: 800;
-		line-height: 1.1;
-		margin-bottom: 0.5em;
-		background: linear-gradient(45deg, #ff0055, #00fbff);
-		-webkit-background-clip: text;
-		-webkit-text-fill-color: transparent;
-		filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));
-	}
-	.subtitle {
-		font-size: 1.5rem;
-		color: #888;
-		letter-spacing: 2px;
-		text-transform: uppercase;
-	}
-	.card {
-		background: #1a1d23;
-		padding: 2.5rem;
-		border-radius: 1.5rem;
-		border: 1px solid #333;
-		box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-	}
-	h2 {
-		color: #fff;
-		margin-top: 0;
-	}
-	p {
-		line-height: 1.6;
-		font-size: 1.1rem;
-	}
+	/* ... tvoje existující styly + přidáme ... */
+	.main-img { width: 100%; border-radius: 0.5rem; margin-bottom: 1rem; }
+	.card { background: #1a1d23; padding: 1.5rem; margin-bottom: 2rem; border-radius: 1rem; }
+	.loc { color: #00fbff; font-weight: bold; }
 </style>
