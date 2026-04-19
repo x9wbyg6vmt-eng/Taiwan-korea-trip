@@ -1,9 +1,9 @@
 import { defineCollection, z } from 'astro:content';
-import { glob } from 'astro/loaders'; // Důležitá novinka v Astro 6
+import { glob } from 'astro/loaders'; 
 
 const blog = defineCollection({
-	// Loader říká: Hledej všechny soubory ve složce src/content/blog
-	loader: glob({ pattern: "**/*.md", base: "./src/content/blog" }),
+	// Změna: Hledáme .md i .markdown a zjednodušili jsme cestu
+	loader: glob({ pattern: "**/*.{md,markdown}", base: "./src/content/blog" }),
 	schema: z.object({
 		title: z.string(),
 		location_name: z.string(),
