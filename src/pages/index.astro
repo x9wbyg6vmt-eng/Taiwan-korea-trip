@@ -48,6 +48,7 @@ const validPoints = mapPoints.filter(p => p.coords);
 			{posts.map(post => (
 				<article class="post-card">
 					<img src={post.data.image_main} alt={post.data.title} />
+					<img src={`${import.meta.env.BASE_URL}${post.data.image_main.replace(/^\//, '')}`} alt={post.data.title} />
 					<div class="post-content">
 						<span class="badge">📍 {post.data.location_name}</span>
 						<h2>{post.data.title}</h2>
