@@ -1,0 +1,21 @@
+backend:
+  name: github
+  repo: tvuj-nick/Taiwan-korea-trip # SEM DOPLŇ SVŮJ NICK A NÁZEV REPA
+  branch: main
+
+media_folder: "public/images/uploads"
+public_folder: "/images/uploads"
+
+collections:
+  - name: "blog"
+    label: "Deník z cesty"
+    folder: "src/content/blog"
+    create: true
+    slug: "{{year}}-{{month}}-{{day}}-{{slug}}"
+    fields:
+      - { label: "Název dne", name: "title", widget: "string" }
+      - { label: "Lokalita (název)", name: "location_name", widget: "string" }
+      - { label: "Hlavní fotka (Highlight)", name: "image_main", widget: "image" }
+      - { label: "Doplňková fotka 1", name: "image_sub1", widget: "image", required: false }
+      - { label: "Doplňková fotka 2", name: "image_sub2", widget: "image", required: false }
+      - { label: "Text zážitku", name: "body", widget: "markdown" }
