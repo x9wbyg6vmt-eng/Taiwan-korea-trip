@@ -4,11 +4,15 @@ import { getCollection } from 'astro:content';
 import exifr from 'exifr';
 import fs from 'node:fs';
 
-// Načtení příspěvků
+// 1. Načtení všech příspěvků z deníku
 const posts = await getCollection('blog');
 
-// Extrakce GPS dat
+// Pomocná funkce pro vyčištění cest k obrázkům
+const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+// 2. Extrakce GPS dat z fotek během buildu
 const mapPoints = await Promise.all(posts.map(async (post) => {
+  // Cesta k souboru pro EXIF (relativní k rootu projektu při buildu)
   const imagePath = `./public${post.data.image_main}`;
   let coords = null;
   
@@ -18,7 +22,7 @@ const mapPoints = await Promise.all(posts.map(async (post) => {
       if (data) coords = [data.latitude, data.longitude];
     }
   } catch (e) {
-    console.log("GPS nenalezeno");
+    console.log("GPS data nebyla ve fotce nalezena:", post.data.image_main);
   }
 
   return {
@@ -28,6 +32,7 @@ const mapPoints = await Promise.all(posts.map(async (post) => {
   };
 }));
 
+// Vyfiltrujeme jen ty body, které mají souřadnice
 const validPoints = mapPoints.filter(p => p.coords);
 ---
 
@@ -42,80 +47,185 @@ const validPoints = mapPoints.filter(p => p.coords);
 			<div id="map"></div>
 		</div>
 
-		<section class="posts">
-			{posts.length === 0 && <p class="warning">Zatím žádné příspěvky. Zkontrolujte složku src/content/blog/</p>}
+		<section class="posts-grid">
+			{posts.length === 0 && (
+				<div class="warning">
+					<p>Zatím žádné příspěvky. Přidejte .md soubor do src/content/blog/</p>
+				</div>
+			)}
 			
-			{posts.map(post => (
-				<article class="post-card">
-					<img src={post.data.image_main} alt={post.data.title} />
-					<img src={`${import.meta.env.BASE_URL}${post.data.image_main.replace(/^\//, '')}`} alt={post.data.title} />
-					<div class="post-content">
-						<span class="badge">📍 {post.data.location_name}</span>
-						<h2>{post.data.title}</h2>
-						<div class="text">{post.body}</div>
-					</div>
-				</article>
-			))}
+			{posts.map(post => {
+				// Oprava cesty k obrázku pro GitHub Pages
+				const cleanImagePath = post.data.image_main.replace(/^\//, '');
+				const finalImageSrc = `${baseUrl}/${cleanImagePath}`;
+				
+				return (
+					<article class="post-card">
+						<div class="image-wrapper">
+							<img src={finalImageSrc} alt={post.data.title} />
+						</div>
+						<div class="post-content">
+							<span class="badge">📍 {post.data.location_name}</span>
+							<h2>{post.data.title}</h2>
+							<div class="text">
+								{/* Zobrazení obsahu příspěvku */}
+								{post.body}
+							</div>
+						</div>
+					</article>
+				);
+			})}
 		</section>
 	</main>
 </Layout>
 
 <script is:inline define:vars={{ validPoints }}>
-	// Inicializace mapy s ochranou proti chybě
-	const map = L.map('map').setView([23.5, 121], 6);
+	// Inicializace mapy Leaflet
+	// Nastavíme výchozí pohled na Taiwan/Korea oblast
+	const map = L.map('map').setView([25.0, 121.5], 5);
 	
+	// Tmavý podklad mapy (CartoDB DarkMatter)
 	L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-		attribution: '&copy; OpenStreetMap contributors'
+		attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
 	}).addTo(map);
 
 	if (validPoints.length > 0) {
-		const coords = validPoints.map(p => p.coords);
+		const allCoords = validPoints.map(p => p.coords);
+		
+		// Přidání značek (markerů) pro každý den
 		validPoints.forEach(p => {
-			L.marker(p.coords).addTo(map).bindPopup(`<b>${p.title}</b><br>${p.location}`);
+			L.marker(p.coords)
+				.addTo(map)
+				.bindPopup(`<b>${p.title}</b><br>${p.location}`);
 		});
-		if (coords.length > 1) {
-			L.polyline(coords, {color: '#00fbff', weight: 3}).addTo(map);
+
+		// Pokud máme více bodů, vykreslíme spojovací čáru (trasu)
+		if (allCoords.length > 1) {
+			const polyline = L.polyline(allCoords, {
+				color: '#00fbff',
+				weight: 3,
+				opacity: 0.7,
+				dashArray: '5, 10'
+			}).addTo(map);
+			
+			// Automatické přiblížení mapy, aby byly vidět všechny body
+			map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+		} else {
+			// Pokud je jen jeden bod, vycentrujeme mapu na něj
+			map.setView(allCoords[0], 10);
 		}
-		map.fitBounds(L.polyline(coords).getBounds(), { padding: [50, 50] });
 	}
 </script>
 
 <style>
 	main {
 		margin: auto;
-		padding: 1rem;
-		width: 800px;
-		max-width: calc(100% - 2rem);
+		padding: 1.5rem;
+		width: 850px;
+		max-width: calc(100% - 3rem);
+		color: #e0e0e0;
 	}
-	.hero { text-align: center; padding: 2rem 0; }
-	h1 { font-size: 3.5rem; margin: 0; background: linear-gradient(45deg, #ff0055, #00fbff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-	.subtitle { color: #888; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 2px; }
 	
+	.hero {
+		text-align: center;
+		padding: 3rem 0;
+	}
+	
+	h1 {
+		font-size: clamp(2.5rem, 8vw, 4rem);
+		margin: 0;
+		font-weight: 800;
+		background: linear-gradient(45deg, #ff0055, #00fbff);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		filter: drop-shadow(0 5px 15px rgba(0,0,0,0.2));
+	}
+	
+	.subtitle {
+		color: #888;
+		font-size: 1.1rem;
+		text-transform: uppercase;
+		letter-spacing: 4px;
+		margin-top: 0.5rem;
+	}
+
 	#map-container {
 		background: #1a1d23;
-		padding: 10px;
-		border-radius: 20px;
-		box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-		margin-bottom: 3rem;
+		padding: 12px;
+		border-radius: 24px;
+		box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+		margin-bottom: 4rem;
+		border: 1px solid #333;
 	}
-	#map { height: 450px; border-radius: 15px; }
+	
+	#map {
+		height: 500px;
+		border-radius: 16px;
+		z-index: 1;
+	}
 
 	.post-card {
 		background: #1a1d23;
-		border-radius: 20px;
+		border-radius: 24px;
 		overflow: hidden;
-		margin-bottom: 3rem;
+		margin-bottom: 3.5rem;
 		border: 1px solid #333;
+		transition: transform 0.3s ease;
 	}
+	
+	.image-wrapper {
+		width: 100%;
+		line-height: 0;
+		overflow: hidden;
+	}
+	
 	.post-card img {
-    width: 100%;
-    height: auto;
-    display: block;
-    border-bottom: 1px solid #333;
-}
-	.post-content { padding: 2rem; }
-	.badge { background: #00fbff22; color: #00fbff; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; }
-	h2 { margin: 1rem 0; font-size: 2rem; }
-	.text { color: #ccc; line-height: 1.8; font-size: 1.1rem; }
-	.warning { text-align: center; color: #ff0055; background: #ff005511; padding: 1rem; border-radius: 10px; }
+		width: 100%;
+		height: auto;
+		display: block;
+		object-fit: cover;
+	}
+
+	.post-content {
+		padding: 2.5rem;
+	}
+
+	.badge {
+		background: rgba(0, 251, 255, 0.1);
+		color: #00fbff;
+		padding: 6px 14px;
+		border-radius: 100px;
+		font-weight: 600;
+		font-size: 0.85rem;
+		border: 1px solid rgba(0, 251, 255, 0.2);
+	}
+
+	h2 {
+		margin: 1.2rem 0;
+		font-size: 2.2rem;
+		color: #fff;
+	}
+
+	.text {
+		color: #b0b0b0;
+		line-height: 1.8;
+		font-size: 1.15rem;
+		white-space: pre-wrap; /* Zachová zalomení řádků z Markdownu */
+	}
+
+	.warning {
+		text-align: center;
+		padding: 3rem;
+		background: rgba(255, 0, 85, 0.05);
+		border: 1px dashed #ff0055;
+		border-radius: 20px;
+		color: #ff0055;
+	}
+
+	@media (max-width: 600px) {
+		main { padding: 1rem; }
+		.post-content { padding: 1.5rem; }
+		h2 { font-size: 1.6rem; }
+		#map { height: 350px; }
+	}
 </style>
