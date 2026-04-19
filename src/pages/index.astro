@@ -5,7 +5,14 @@ import exifr from 'exifr';
 import fs from 'node:fs';
 
 const posts = await getCollection('blog');
-const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+// Funkce pro neprůstřelné skládání cest k obrázkům
+const fixPath = (path: string | undefined) => {
+  if (!path) return undefined;
+  const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+  const cleanPath = path.replace(/^\//, '');
+  return `${base}/${cleanPath}`;
+};
 
 const mapPoints = await Promise.all(posts.map(async (post) => {
   const imagePath = `./public${post.data.image_main}`;
@@ -35,32 +42,37 @@ const validPoints = mapPoints.filter(p => p.coords);
 		</section>
 
 		<section class="journal-feed">
-			{posts.map(post => {
-				const mainImg = `${baseUrl}/${post.data.image_main.replace(/^\//, '')}`;
-				return (
-					<article class="journal-entry">
-						<div class="entry-header">
-							<span class="location-badge">{post.data.location_name}</span>
-							<h2>{post.data.title}</h2>
-						</div>
+			{posts.map(post => (
+				<article class="journal-entry">
+					<div class="entry-header">
+						<span class="location-badge">{post.data.location_name}</span>
+						<h2>{post.data.title}</h2>
+					</div>
 
-						<div class="gallery-stack">
-							<img src={mainImg} alt="" class="main-image" />
-							
-							{(post.data.image_sub1 || post.data.image_sub2) && (
-								<div class="sub-images">
-									{post.data.image_sub1 && <img src={`${baseUrl}/${post.data.image_sub1.replace(/^\//, '')}`} alt="" />}
-									{post.data.image_sub2 && <img src={`${baseUrl}/${post.data.image_sub2.replace(/^\//, '')}`} alt="" />}
-								</div>
-							)}
+					<div class="gallery-stack">
+						{/* HLAVNÍ FOTKA */}
+						<div class="main-image-container">
+							<img src={fixPath(post.data.image_main)} alt="" class="main-image" />
 						</div>
+						
+						{/* DOPLŇKOVÉ FOTKY */}
+						{(post.data.image_sub1 || post.data.image_sub2) && (
+							<div class="sub-images">
+								{post.data.image_sub1 && (
+									<img src={fixPath(post.data.image_sub1)} alt="Doplňková fotka 1" />
+								)}
+								{post.data.image_sub2 && (
+									<img src={fixPath(post.data.image_sub2)} alt="Doplňková fotka 2" />
+								)}
+							</div>
+						)}
+					</div>
 
-						<div class="entry-body">
-							{post.body}
-						</div>
-					</article>
-				)
-			})}
+					<div class="entry-body">
+						{post.body}
+					</div>
+				</article>
+			))}
 		</section>
 	</main>
 </Layout>
@@ -73,7 +85,7 @@ const validPoints = mapPoints.filter(p => p.coords);
 		const coords = validPoints.map(p => p.coords);
 		validPoints.forEach(p => {
 			L.circleMarker(p.coords, { color: '#A3C1AD', radius: 6, fillOpacity: 0.8 }).addTo(map)
-				.bindPopup(`<b style="color:#161311">${p.title}</b>`);
+				.bindPopup(`<b>${p.title}</b>`);
 		});
 		if (coords.length > 1) {
 			L.polyline(coords, { color: '#A3C1AD', weight: 1, dashArray: '5, 10' }).addTo(map);
@@ -84,24 +96,18 @@ const validPoints = mapPoints.filter(p => p.coords);
 
 <style>
 	main { margin: auto; padding: 2rem; width: 700px; max-width: calc(100% - 4rem); }
-	
 	.hero { text-align: center; padding: 4rem 0; }
 	.tiny-label { font-size: 12px; letter-spacing: 3px; color: var(--color-accent); text-transform: uppercase; margin-bottom: 1rem; }
 	h1 { font-family: var(--font-display); font-size: 4rem; font-weight: 400; margin: 0; font-style: italic; }
 	.accent-line { width: 40px; height: 1px; background: var(--color-accent); margin: 2rem auto; }
-
-	#map-section { background: var(--color-surface-2); padding: 10px; border-radius: 2px; margin-bottom: 5rem; }
+	#map-section { background: var(--color-surface-2); padding: 10px; border-radius: 2px; margin-bottom: 5rem; border: 1px solid #29231E; }
 	#map { height: 400px; filter: grayscale(0.5) contrast(1.1); }
-
 	.journal-entry { margin-bottom: 8rem; }
-	.entry-header { margin-bottom: 2rem; }
 	.location-badge { font-size: 12px; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 1px; }
 	h2 { font-family: var(--font-display); font-size: 2.5rem; font-weight: 400; margin: 0.5rem 0; }
-
 	.gallery-stack { display: flex; flex-direction: column; gap: 10px; margin-bottom: 2rem; }
-	.main-image { width: 100%; border-radius: 2px; }
+	.main-image { width: 100%; border-radius: 2px; display: block; }
 	.sub-images { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-	.sub-images img { width: 100%; height: 200px; object-fit: cover; border-radius: 2px; }
-
+	.sub-images img { width: 100%; height: 250px; object-fit: cover; border-radius: 2px; display: block; }
 	.entry-body { font-size: 1.1rem; line-height: 1.8; color: var(--color-text-muted); white-space: pre-wrap; }
 </style>
